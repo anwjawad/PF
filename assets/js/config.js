@@ -53,9 +53,9 @@
     GAS: {
       // مثال: "https://script.google.com/macros/s/AKfycbx.../exec"
       // اتركه فارغًا أو اترك القيمة الافتراضية الواضحة إن لم تكن جاهزًا بعد.
-      ENDPOINT: "",
+      ENDPOINT: "https://script.google.com/macros/s/AKfycbwJfD9LelAtbExhrhL2rCzORldywIa6092xZU9Q-OFpBWxGKiTcuHEArlPDRdVieYBE/exec",
       // لو true سيحاول التطبيق جلب السجلات من GAS عند التحميل (مزامنة أولية)
-      AUTO_SYNC: false,
+      AUTO_SYNC: true,
       // لو true سيحاول الكتابة إلى GAS بعد كل حفظ محلي بنمط write(schema, record)
       WRITE_ON_SAVE: true,
       // مهلة JSONP الافتراضية بالمللي ثانية
