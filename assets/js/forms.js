@@ -92,6 +92,73 @@
         { key: "next_review", label: "مراجعة قادمة", type: "date" },
       ],
     },
+
+    /* ==============================
+       NEW FORM: إعارة معدات طبية 2025
+    ============================== */
+    {
+      id: "equipment_loan_2025",
+      title: "إعارة معدات طبية 2025",
+      icon: "🧰",
+      description: "تسجيل عمليات إعارة المعدات الطبية وتتبع التسليم والإرجاع.",
+      primaryKey: "device_number",
+      columnsOrder: [
+        "patient_name",
+        "recipient_name",
+        "kinship",
+        "patient_file_id",
+        "recipient_id",
+        "contact_phone",
+        "region",
+        "diagnosis",
+        "device",
+        "device_number",
+        "delivery_date",
+        "palliative_signature",
+        "return_date",
+        "receipt_status",
+        "notes"
+      ],
+      fields: [
+        { key: "patient_name", label: "اسم المريض", type: "text", required: true, placeholder: "الاسم الكامل" },
+        { key: "recipient_name", label: "اسم مستلم الجهاز", type: "text", required: true, placeholder: "اسم المستلم" },
+        { key: "kinship", label: "صلة القرابة", type: "text", placeholder: "ابن/ابنة/أخ/أخت…" },
+
+        { key: "patient_file_id", label: "رقم هوية / ملف المريض", type: "text",
+          required: true, pattern: window.PF_CONFIG.PATTERNS.ID.source, placeholder: "مثال: 991234567" },
+
+        { key: "recipient_id", label: "رقم هوية المستلم", type: "text",
+          pattern: window.PF_CONFIG.PATTERNS.ID.source, placeholder: "مثال: 901234567" },
+
+        { key: "contact_phone", label: "رقم للتواصل", type: "tel",
+          pattern: window.PF_CONFIG.PATTERNS.PHONE.source, placeholder: "+970 5X…" },
+
+        { key: "region", label: "المنطقة", type: "select",
+          options: ["Bethlehem","Hebron","Jenin","Jerusalem","Nablus","Ramallah","Salfit","Tulkarm"],
+          placeholder: "اختر…" },
+
+        { key: "diagnosis", label: "التشخيص الطبي", type: "text", placeholder: "مثال: Breast / Lung / Head & Neck…" },
+
+        { key: "device", label: "الجهاز المطلوب", type: "select",
+          options: ["Air Mattress","Commode","Lymphatic Drainage Device","Nebulizer","O2 Generator","Suction Machine"],
+          required: true, placeholder: "اختر الجهاز…" },
+
+        { key: "device_number", label: "رقم الجهاز", type: "text", required: true, placeholder: "مثال: 4415" },
+
+        { key: "delivery_date", label: "تاريخ التسليم", type: "date", required: true, default: "today" },
+
+        { key: "palliative_signature", label: "توقيع قسم الرعاية التلطيفية", type: "select",
+          options: ["أصالة نوباني","أمين دحودلان","تامر الجعفري","جواد ابو صبحة"],
+          placeholder: "اختر…" },
+
+        { key: "return_date", label: "تاريخ الارجاع", type: "date" },
+
+        { key: "receipt_status", label: "حالة الاستلام", type: "radio",
+          options: ["مستلم","غير مستلم"], required: true },
+
+        { key: "notes", label: "ملاحظات", type: "textarea", rows: 3, placeholder: "تفاصيل إضافية عند الحاجة" }
+      ]
+    }
   ];
 
   /** أدوات مساعدة */
@@ -120,20 +187,13 @@
     return rec;
   }
 
-  /**
-   * إضافة نموذج جديد لاحقًا بسهولة:
-   * PF_FORMS.addSchema({ id, title, fields: [...] })
-   * ثم سيظهر تلقائيًا في الواجهة (ui.js) دون تغيير إضافي.
-   */
   function addSchema(schema) {
     if (!schema || !schema.id) return;
     if (SCHEMAS.some(s => s.id === schema.id)) return;
     SCHEMAS.push(schema);
-    // إشعار واجهة المستخدم لإعادة تحميل القائمة
     document.dispatchEvent(new CustomEvent("pf:schemas:updated"));
   }
 
-  // نشر API عالميًا
   window.PF_FORMS = {
     schemas: SCHEMAS,
     get: schemaById,
