@@ -1,6 +1,7 @@
 /* ======================================================
    main.js
    نقطة الدخول وتدفق العمل: ربط UI + Forms + Sheets + Store
+   -> مضاف: دعم Google Apps Script (GAS) للكتابة/المزامنة عبر JSONP
 ====================================================== */
 
 (function () {
@@ -40,7 +41,6 @@
         ? STATE.activeSchema.columnsOrder
         : STATE.activeSchema.fields.map(f => f.key);
     } else {
-      // بدون نموذج نشط: لا نعرض شيئًا (حتى يكون واضح و سريع)
       rows = [];
       columns = [];
     }
@@ -50,7 +50,6 @@
   }
 
   function validateRecord(schema, rec) {
-    // التحقق الأساسي للحقول required + pattern + min/max للأرقام
     for (const f of schema.fields) {
       const v = rec[f.key];
       if (f.required && !String(v || "").trim()) {
@@ -76,8 +75,6 @@
 
   function recordFromForm(schema) {
     const rec = window.PF_UI.readFormValues(schema);
-    // تطبيع شرائح tags: إبقائها نصًا مفصولًا بفواصل (جاهزة للتصدير)
-    // (تم بالفعل في ui.js)
     rec.__schema = schema.id; // وسم السجل بنوع السكيما للفصل بين النماذج
     return rec;
   }
@@ -101,6 +98,40 @@
   }
 
   /* ---------------------------
+     وظائف GAS المساعدة (آمنة)
+  --------------------------- */
+  function gasAvailable() {
+    return !!(window.PF_GAS && CFG.GAS && CFG.GAS.ENDPOINT && CFG.GAS.ENDPOINT.trim());
+  }
+
+  async function gasWriteIfEnabled(schemaId, recordObj) {
+    if (!gasAvailable()) return null;
+    if (!CFG.GAS.WRITE_ON_SAVE) return null;
+    try {
+      const res = await window.PF_GAS.write(schemaId, recordObj);
+      window.PF_UI.showToast("تمت مزامنة السجل إلى السحابة ✅");
+      return res;
+    } catch (err) {
+      console.warn("PF_GAS.write failed:", err);
+      window.PF_UI.showToast("فشل مزامنة السجل إلى السحابة", "error");
+      return null;
+    }
+  }
+
+  async function gasAutoSyncIfEnabled() {
+    if (!gasAvailable()) return;
+    if (!CFG.GAS.AUTO_SYNC) return;
+    try {
+      await window.PF_GAS.syncIntoLocal(); // يدمج البيانات الموجودة في السحابة محليًا
+      refreshResults();
+    } catch (err) {
+      console.warn("PF_GAS.syncIntoLocal failed:", err);
+      // لا نعرض خطأ جارف — نكتفي بالتنبيه الرفيع
+      window.PF_UI.showToast("فشل المزامنة الأولية من السحابة", "error");
+    }
+  }
+
+  /* ---------------------------
      ربط القوائم و عناصر الواجهة
   --------------------------- */
   function initMenus() {
@@ -113,7 +144,6 @@
   function initControls() {
     window.PF_UI.attachInteractiveControls({
       onNewForm: async () => {
-        // اختيار النموذج عبر مودال بسيط
         const opts = window.PF_FORMS.schemas
           .map(s => `<option value="${s.id}">${s.icon || "🗂️"} ${s.title}</option>`)
           .join("");
@@ -136,7 +166,7 @@
         }
       },
 
-      onSave: () => {
+      onSave: async () => {
         if (!STATE.activeSchema) {
           window.PF_UI.showToast("اختر نموذجًا أولًا", "error");
           return;
@@ -144,12 +174,19 @@
         try {
           const rec = recordFromForm(STATE.activeSchema);
           validateRecord(STATE.activeSchema, rec);
+
+          // حفظ محلي
           const all = getAllData();
           all.push(rec);
           window.PF_STORE.saveLocal(all);
-          window.PF_UI.showToast("تم الحفظ ✅");
+          window.PF_UI.showToast("تم الحفظ محليًا ✅");
+
           // تحديث الجدول
           refreshResults();
+
+          // محاولة الكتابة إلى Google Apps Script إن مفعّل
+          await gasWriteIfEnabled(STATE.activeSchema.id, rec);
+
         } catch (err) {
           window.PF_UI.showToast(err.message || "تعذّر الحفظ", "error");
         }
@@ -161,9 +198,8 @@
       },
 
       onImport: async () => {
+        // يترك الاستيراد من Google Sheets التقليدي كما هو
         const merged = await window.PF_STORE.importFromSheets();
-        // إن كان هناك نموذج نشط، فلن يتم تصفية الاستيراد حسبه (الاستيراد عام).
-        // يمكنك لاحقًا تعديل mapping لتخزين __schema عند الاستيراد.
         refreshResults();
         if (!merged.length) window.PF_UI.showToast("لا توجد بيانات للاستيراد", "error");
       },
@@ -237,6 +273,13 @@
     const first = window.PF_FORMS.schemas[0];
     setActiveSchema(first);
     resetFormToDefaults();
+
+    // إذا تم إعداد GAS و AUTO_SYNC true -> مزامنة أولية من السحابة
+    try {
+      await gasAutoSyncIfEnabled();
+    } catch (e) {
+      console.warn("Initial GAS sync failed:", e);
+    }
 
     // إخفاء اللودر
     window.PF_UI.setLoaderVisible(false);
