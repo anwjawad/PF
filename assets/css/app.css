@@ -1,0 +1,298 @@
+/* ===========================
+   الأساسيات العامة
+=========================== */
+:root {
+  --transition-speed: 0.4s;
+  --radius: 12px;
+  --shadow: 0 4px 16px rgba(0,0,0,0.15);
+  --font-body: 'Cairo', sans-serif;
+  --color-text: #111;
+  --color-bg: #fff;
+  --color-accent: #0088cc;
+  --color-muted: #999;
+}
+
+/* ثيم ocean (الافتراضي) */
+[data-theme="ocean"] {
+  --color-bg: #f5fbff;
+  --color-accent: #0ea5e9;
+  --color-text: #023047;
+}
+
+/* ثيم neon */
+[data-theme="neon"] {
+  --color-bg: #0f0f1f;
+  --color-text: #e0e0ff;
+  --color-accent: #00f0ff;
+}
+
+/* ثيم rose */
+[data-theme="rose"] {
+  --color-bg: #fff5f7;
+  --color-accent: #e91e63;
+  --color-text: #31111d;
+}
+
+/* ثيم dawn */
+[data-theme="dawn"] {
+  --color-bg: #fdf6ec;
+  --color-accent: #f97316;
+  --color-text: #432818;
+}
+
+/* ===========================
+   تنسيقات أساسية
+=========================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100%;
+  transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+h1,h2,h3 {
+  margin: 0.2em 0;
+  font-weight: 700;
+}
+
+button, input, select {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  border-radius: var(--radius);
+  transition: all var(--transition-speed);
+}
+
+button {
+  cursor: pointer;
+  padding: 0.6em 1.2em;
+}
+
+input[type="search"] {
+  padding: 0.5em 0.8em;
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+}
+
+/* ===========================
+   الهيدر والأدوات
+=========================== */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.2rem;
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.brand h1 {
+  font-size: 1.4rem;
+  margin-inline-start: 0.4rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0,0,0,0.03);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.searchbox input {
+  width: 200px;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.btn.primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px var(--color-accent);
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+}
+
+.btn.outline {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  background: transparent;
+}
+
+.btn.soft {
+  background: rgba(0,0,0,0.05);
+}
+
+.btn.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn.glow {
+  box-shadow: 0 0 6px var(--color-accent);
+}
+
+/* ===========================
+   الهيكل الرئيسي
+=========================== */
+.app-main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.forms-list {
+  background: #fff8;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+/* ===========================
+   جدول النتائج
+=========================== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.data-table th {
+  background: var(--color-accent);
+  color: #fff;
+  position: sticky;
+  top: 0;
+}
+
+/* ===========================
+   مؤثرات ورسوميات
+=========================== */
+.fade-in {
+  animation: fadeIn var(--transition-speed) ease-in;
+}
+.slide-in-left {
+  animation: slideInLeft var(--transition-speed) ease-out;
+}
+.slide-in-right {
+  animation: slideInRight var(--transition-speed) ease-out;
+}
+.slide-down {
+  animation: slideDown var(--transition-speed) ease-out;
+}
+.rise-in {
+  animation: riseIn 0.5s ease;
+}
+
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+@keyframes slideInLeft { from { transform:translateX(-20px); opacity:0 } to { transform:translateX(0); opacity:1 } }
+@keyframes slideInRight { from { transform:translateX(20px); opacity:0 } to { transform:translateX(0); opacity:1 } }
+@keyframes slideDown { from { transform:translateY(-20px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+@keyframes riseIn { from { transform:translateY(20px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+
+/* ===========================
+   الـ Loader
+=========================== */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+.loader-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(0,0,0,0.1);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ===========================
+   Toast / Modal
+=========================== */
+.toast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 0.8em 1.2em;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--transition-speed);
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modal::backdrop {
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+}
+.modal-card {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  min-width: 300px;
+  max-width: 500px;
+}
+
+/* ===========================
+   اللمسات الإبداعية
+=========================== */
+.btn:hover {
+  filter: brightness(1.1);
+}
+input:focus, select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 4px var(--color-accent);
+}
