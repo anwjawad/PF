@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Palliative Forms | نماذج رعاية تلطيفية</title>
+  <meta name="description" content="تطبيق ويب خفيف لإدخال واسترجاع نماذج رعاية تلطيفية بسرعة ووضوح." />
+
+  <!-- أساسي: ملف التنسيقات العام + الثيمات (سيتم تعريف 4 ثيمات: ocean, neon, rose, dawn) -->
+  <link rel="stylesheet" href="assets/css/app.css" />
+
+  <!-- أيقونات بسيطة (اختياري) -->
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+</head>
+<body data-theme="ocean">
+  <!-- شاشة تحميل أنيقة -->
+  <div id="app-loader" class="loader-overlay">
+    <div class="loader-spinner" aria-label="جاري التحميل"></div>
+    <div class="loader-hint">جاري تجهيز التطبيق…</div>
+  </div>
+
+  <!-- شريط علوي -->
+  <header class="app-header slide-down">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <h1>نماذج الرعاية التلطيفية</h1>
+    </div>
+
+    <div class="header-actions">
+      <!-- مبدّل الثيم -->
+      <label class="theme-switch">
+        <span>الثيم</span>
+        <select id="themeSelect" class="control">
+          <option value="ocean">Ocean</option>
+          <option value="neon">Neon</option>
+          <option value="rose">Rose</option>
+          <option value="dawn">Dawn</option>
+        </select>
+      </label>
+
+      <!-- زر تفعيل وضع العرض الكبير -->
+      <button id="presentationBtn" class="btn ghost" title="وضع العرض">
+        عرض
+      </button>
+    </div>
+  </header>
+
+  <!-- شريط أدوات سريع -->
+  <nav class="toolbar fade-in">
+    <button id="newFormBtn" class="btn primary glow">+ نموذج جديد</button>
+    <button id="importSheetBtn" class="btn outline">
+      استرجاع البيانات من Google Sheets
+    </button>
+    <button id="exportJsonBtn" class="btn soft">تصدير JSON</button>
+    <button id="clearLocalBtn" class="btn danger subtle">مسح محلي</button>
+
+    <div class="spacer"></div>
+
+    <!-- بحث سريع -->
+    <div class="searchbox">
+      <input id="quickSearch" type="search" placeholder="بحث سريع باسم المريض / الرقم…" />
+    </div>
+  </nav>
+
+  <!-- جسم التطبيق -->
+  <main class="app-main">
+    <!-- عمود النماذج المتاحة (ديناميكي) -->
+    <aside class="forms-list slide-in-right" aria-label="الفورمات">
+      <h2 class="section-title">الفورمات</h2>
+      <ul id="formsMenu" class="list"></ul>
+      <div class="hint">ستظهر هنا جميع النماذج (وقابل لإضافة نماذج جديدة لاحقًا).</div>
+    </aside>
+
+    <!-- منطقة العمل (الفورم النشط) -->
+    <section class="workbench slide-in-left">
+      <div class="workbench-header">
+        <h2 id="activeFormTitle">—</h2>
+        <div class="wb-actions">
+          <button id="saveEntryBtn" class="btn success glow">حفظ الإدخال</button>
+          <button id="resetFormBtn" class="btn subtle">تفريغ</button>
+        </div>
+      </div>
+
+      <form id="dynamicForm" class="card form fade-in" autocomplete="on" novalidate>
+        <!-- يتم توليد الحقول ديناميكياً من forms.js -->
+        <div class="empty-state">
+          اختر نموذجًا من اليسار أو اضغط “+ نموذج جديد”.
+        </div>
+      </form>
+
+      <!-- جدول/شبكة النتائج -->
+      <div class="results card rise-in">
+        <div class="results-head">
+          <h3>السجلات</h3>
+          <div class="results-actions">
+            <button id="refreshBtn" class="btn soft">تحديث</button>
+            <button id="copyTableBtn" class="btn outline">نسخ الجدول</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="resultsTable" class="data-table">
+            <thead id="resultsHead"></thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <div id="resultsEmpty" class="muted">لا توجد بيانات بعد.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- إشعارات ومودالات -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="modal" class="modal">
+    <form method="dialog" class="modal-card">
+      <header class="modal-header">
+        <h3 id="modalTitle">تفاصيل</h3>
+        <button value="close" class="icon-btn" aria-label="إغلاق">×</button>
+      </header>
+      <div id="modalBody" class="modal-body"></div>
+      <footer class="modal-footer">
+        <button value="cancel" class="btn subtle">إلغاء</button>
+        <button value="ok" class="btn primary">تم</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <noscript>
+    <p style="padding:1rem">هذا التطبيق يحتاج لتفعيل جافاسكربت.</p>
+  </noscript>
+
+  <!-- ترتيب السكربتات: عدة ملفات ولكل ملف مهمة محددة -->
+  <!-- 1) الإعدادات العامة والروابط الافتراضية (ID جوجل شيت + أسماء الشيت) -->
+  <script src="assets/js/config.js" defer></script>
+
+  <!-- 2) طبقة التعامل مع Google Sheets عبر JSONP لتفادي CORS (تحقن <script> ديناميكيًا) -->
+  <script src="assets/js/sheets.js" defer></script>
+
+  <!-- 3) تعريف نماذج الحقول (سكيما) + قابلية إضافة فورمات لاحقًا بسهولة -->
+  <script src="assets/js/forms.js" defer></script>
+
+  <!-- 4) الواجهة: بناء الحقول ديناميكيًا، مؤثرات، انتقالات، ثيمات -->
+  <script src="assets/js/ui.js" defer></script>
+
+  <!-- 5) تخزين محلي (LocalStorage/IndexedDB) + استيراد/تصدير JSON -->
+  <script src="assets/js/storage.js" defer></script>
+
+  <!-- 6) نقطة الدخول: ربط الأحداث + تدفق العمل -->
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
