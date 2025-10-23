@@ -4,18 +4,6 @@
    (لا حاجة لإدخال الروابط يدويًا داخل التطبيق)
 ============================================ */
 
-/**
- * ملاحظة JSONP:
- * سنستخدم واجهة gviz الخاصة بجوجل شيت لأنها تُرجِع استجابة جافاسكربت
- * (google.visualization.Query.setResponse) وبالتالي لا يحصل CORS Block على GitHub Pages.
- * سنلتقط هذه الاستجابة في sheets.js عبر دالة global hook.
- *
- * مثال على رابط gviz:
- * https://docs.google.com/spreadsheets/d/<SHEET_ID>/gviz/tq?tq=<QUERY>&sheet=<SHEET_NAME>
- *
- * يمكن لاحقًا تغيير هذه القيم دون تعديل المنطق في باقي الملفات.
- */
-
 (function () {
   const CONFIG = {
     APP_NAME: "Palliative Forms",
@@ -35,19 +23,12 @@
       ID: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
       SHEET_NAME: "Class Data",
       // استعلام gviz (SQL-like). عدّل الأعمدة لاحقًا وفق شيتك الحقيقي.
-      // tq=select * يجلب كل الأعمدة.
       QUERY: "select *",
-
-      /**
-       * مولّد رابط gviz النهائي (يُستخدم في sheets.js)
-       * نُبقيه دالة لسهولة الاستبدال لاحقًا.
-       */
       buildGvizUrl() {
         const base = `https://docs.google.com/spreadsheets/d/${this.ID}/gviz/tq`;
         const params = new URLSearchParams({
           tq: this.QUERY,
           sheet: this.SHEET_NAME,
-          // tqx=out:json سيعيد استجابة جافاسكربت (ليست JSON صافي) — مناسبة لأسلوب JSONP
           tqx: "out:json",
         });
         return `${base}?${params.toString()}`;
@@ -65,6 +46,20 @@
       PHONE: /^[0-9+\-()\s]{6,}$/,
       ID: /^[0-9]{5,}$/,
       DATE: /^\d{4}-\d{2}-\d{2}$/,
+    },
+
+    // إعدادات Google Apps Script (GAS) — نقطة النهاية لنشر السكربت
+    // ضع هنا رابط الـ Web App بعد نشر Google Apps Script (doGet URL)
+    GAS: {
+      // مثال: "https://script.google.com/macros/s/AKfycbx.../exec"
+      // اتركه فارغًا أو اترك القيمة الافتراضية الواضحة إن لم تكن جاهزًا بعد.
+      ENDPOINT: "",
+      // لو true سيحاول التطبيق جلب السجلات من GAS عند التحميل (مزامنة أولية)
+      AUTO_SYNC: false,
+      // لو true سيحاول الكتابة إلى GAS بعد كل حفظ محلي بنمط write(schema, record)
+      WRITE_ON_SAVE: true,
+      // مهلة JSONP الافتراضية بالمللي ثانية
+      TIMEOUT_MS: 15000,
     },
   };
 
