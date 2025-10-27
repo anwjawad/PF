@@ -1,7 +1,7 @@
 /* ======================================================
    main.js
    نقطة الدخول وتدفق العمل: ربط UI + Forms + Sheets + Store
-   -> مضاف: دعم Google Apps Script (GAS) للكتابة/المزامنة عبر JSONP
+   -> دعم GAS + توليد __uid لكل سجل + Dedup عند الإقلاع
 ====================================================== */
 
 (function () {
@@ -24,7 +24,6 @@
     STATE.activeSchema = schema;
     window.PF_UI.setActiveFormTitle(schema ? schema.title : "—");
     window.PF_UI.renderForm(schema);
-    // عند تغيير النموذج نحدّث جدول النتائج ليعرض فقط سجلات هذا النموذج
     refreshResults();
   }
 
@@ -36,7 +35,6 @@
     if (STATE.activeSchema) {
       const sid = STATE.activeSchema.id;
       rows = all.filter(r => r.__schema === sid);
-      // ترتيب الأعمدة وفق columnsOrder أو ترتيب الحقول
       columns = STATE.activeSchema.columnsOrder?.length
         ? STATE.activeSchema.columnsOrder
         : STATE.activeSchema.fields.map(f => f.key);
@@ -73,9 +71,15 @@
     }
   }
 
+  function genUid() {
+    // بصمة قصيرة: وقت + عشوائي
+    return `u${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`;
+  }
+
   function recordFromForm(schema) {
     const rec = window.PF_UI.readFormValues(schema);
-    rec.__schema = schema.id; // وسم السجل بنوع السكيما للفصل بين النماذج
+    rec.__schema = schema.id;
+    if (!rec.__uid) rec.__uid = genUid(); // توليد معرّف فريد للتخلص من التكرار
     return rec;
   }
 
@@ -90,7 +94,6 @@
     const cols = STATE.activeSchema.columnsOrder?.length
       ? STATE.activeSchema.columnsOrder
       : STATE.activeSchema.fields.map(f => f.key);
-
     return window.PF_SHEETS.toCSV({
       columns: cols,
       rows: STATE.currentViewRows,
@@ -98,7 +101,7 @@
   }
 
   /* ---------------------------
-     وظائف GAS المساعدة (آمنة)
+     وظائف GAS المساعدة
   --------------------------- */
   function gasAvailable() {
     return !!(window.PF_GAS && CFG.GAS && CFG.GAS.ENDPOINT && CFG.GAS.ENDPOINT.trim());
@@ -122,11 +125,10 @@
     if (!gasAvailable()) return;
     if (!CFG.GAS.AUTO_SYNC) return;
     try {
-      await window.PF_GAS.syncIntoLocal(); // يدمج البيانات الموجودة في السحابة محليًا
+      await window.PF_GAS.syncIntoLocal(); // يدمج مع Dedup
       refreshResults();
     } catch (err) {
       console.warn("PF_GAS.syncIntoLocal failed:", err);
-      // لا نعرض خطأ جارف — نكتفي بالتنبيه الرفيع
       window.PF_UI.showToast("فشل المزامنة الأولية من السحابة", "error");
     }
   }
@@ -147,13 +149,11 @@
         const opts = window.PF_FORMS.schemas
           .map(s => `<option value="${s.id}">${s.icon || "🗂️"} ${s.title}</option>`)
           .join("");
-
         const body = `
           <p>اختر النموذج الذي تريد إنشاء إدخال جديد له:</p>
           <label class="field-label">النموذج</label>
           <select id="modalSchemaPick" class="control">${opts}</select>
         `;
-
         const res = await window.PF_UI.showModal("نموذج جديد", body);
         if (res === "ok") {
           const id = document.getElementById("modalSchemaPick").value;
@@ -175,16 +175,16 @@
           const rec = recordFromForm(STATE.activeSchema);
           validateRecord(STATE.activeSchema, rec);
 
-          // حفظ محلي
+          // حفظ محلي (مع __uid حتى لو أعدت الحفظ)
           const all = getAllData();
           all.push(rec);
-          window.PF_STORE.saveLocal(all);
+          // الدمج لإزالة أي تكرارات محتملة فورًا
+          const merged = window.PF_STORE.mergeData(all);
           window.PF_UI.showToast("تم الحفظ محليًا ✅");
 
-          // تحديث الجدول
           refreshResults();
 
-          // محاولة الكتابة إلى Google Apps Script إن مفعّل
+          // كتابة إلى GAS إن مفعّل
           await gasWriteIfEnabled(STATE.activeSchema.id, rec);
 
         } catch (err) {
@@ -198,7 +198,6 @@
       },
 
       onImport: async () => {
-        // يترك الاستيراد من Google Sheets التقليدي كما هو
         const merged = await window.PF_STORE.importFromSheets();
         refreshResults();
         if (!merged.length) window.PF_UI.showToast("لا توجد بيانات للاستيراد", "error");
@@ -259,33 +258,25 @@
   async function boot() {
     window.PF_UI.setLoaderVisible(true);
 
-    // الثيم
     window.PF_UI.initTheme(document.getElementById("themeSelect"));
-
-    // القوائم و عناصر التحكم
     initMenus();
     initControls();
 
-    // ضمان وجود dataset محلي
+    // ضمان وجود dataset + تنظيف أي تكرارات قديمة
     window.PF_STORE.ensureDataset();
+    window.PF_STORE.dedupeLocal();
 
-    // اختيار نموذج افتراضي (الأول في القائمة) لتسريع الإدخال
+    // اختيار نموذج افتراضي
     const first = window.PF_FORMS.schemas[0];
     setActiveSchema(first);
     resetFormToDefaults();
 
-    // إذا تم إعداد GAS و AUTO_SYNC true -> مزامنة أولية من السحابة
-    try {
-      await gasAutoSyncIfEnabled();
-    } catch (e) {
-      console.warn("Initial GAS sync failed:", e);
-    }
+    // مزامنة أولية من GAS (إن مفعّل) — الدمج داخليًا يقوم بالـ Dedup
+    try { await gasAutoSyncIfEnabled(); } catch (e) { console.warn(e); }
 
-    // إخفاء اللودر
     window.PF_UI.setLoaderVisible(false);
     window.PF_UI.showToast("جاهز 🎉");
   }
 
-  // ابدأ
   document.addEventListener("DOMContentLoaded", boot);
 })();
