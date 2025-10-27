@@ -1,7 +1,7 @@
 /* ======================================================
    storage.js
    إدارة تخزين البيانات محليًا + استيراد/تصدير JSON
-   + دمج نتائج Google Sheets
+   + دمج نتائج Google Sheets مع إزالة التكرارات (Dedup)
 ====================================================== */
 
 (function () {
@@ -29,12 +29,61 @@
     try { localStorage.removeItem(CFG.STORAGE_KEYS.DATASET); } catch (_) {}
   }
 
-  /** دمج بيانات جديدة (مثلاً من Google Sheets) */
+  /** بصمة ثابتة لأي كائن (fallback) */
+  function fingerprint(obj) {
+    // ترتيب المفاتيح لتثبيت JSON
+    const stable = (o) => {
+      if (Array.isArray(o)) return o.map(stable);
+      if (o && typeof o === "object") {
+        const out = {};
+        Object.keys(o).sort().forEach(k => out[k] = stable(o[k]));
+        return out;
+      }
+      return o;
+    };
+    return JSON.stringify(stable(obj));
+  }
+
+  /** احصل على مفتاح النموذج الأساسي من PF_FORMS إن وُجد */
+  function primaryKeyFor(schemaId) {
+    try {
+      const sch = window.PF_FORMS.get(schemaId);
+      return sch && sch.primaryKey ? sch.primaryKey : null;
+    } catch (_) { return null; }
+  }
+
+  /** يبني مفتاح إزالة التكرار لسجل */
+  function dedupKey(row) {
+    // 1) __uid لو موجود (فريد يُولّد في main.js عند الحفظ)
+    if (row && row.__uid) return `uid:${row.__uid}`;
+    // 2) schema + primaryKey
+    const sid = row && row.__schema;
+    const pk = primaryKeyFor(sid);
+    if (sid && pk && row.hasOwnProperty(pk) && String(row[pk]).trim() !== "") {
+      return `pk:${sid}:${String(row[pk])}`;
+    }
+    // 3) بصمة JSON كاملة
+    return `fp:${fingerprint(row)}`;
+    }
+
+  /** دمج بيانات جديدة مع إزالة التكرار */
   function mergeData(newRows = []) {
+    const map = new Map();
     const existing = loadLocal();
-    const merged = [...existing, ...newRows];
+    // أضف الموجود
+    (existing || []).forEach(r => map.set(dedupKey(r), r));
+    // أضف الجديد (يستبدل أي تكرار)
+    (newRows || []).forEach(r => map.set(dedupKey(r), r));
+    const merged = Array.from(map.values());
     saveLocal(merged);
     return merged;
+  }
+
+  /** إزالة التكرارات من البيانات الحالية فقط (تنظيف) */
+  function dedupeLocal() {
+    const existing = loadLocal();
+    const cleaned = mergeData([]); // سيحفظ الحالة الحالية بعد إزالة التكرارات
+    return cleaned;
   }
 
   /** تصدير البيانات كـ JSON (ملف أو نص) */
@@ -95,5 +144,6 @@
     importFromSheets,
     copyToClipboard,
     ensureDataset,
+    dedupeLocal,
   };
 })();
