@@ -1,0 +1,207 @@
+/* =======================
+   pf_theme.css
+   استجابة للهاتف + دارك مود
+   ======================= */
+
+/* متغيّرات افتراضية (وضع فاتح) */
+:root {
+  --bg: #ffffff;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+  --focus: #93c5fd;
+
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.06);
+
+  --container-w: 980px;
+  --space: 16px;
+}
+
+/* دارك مود عبر كلاس .dark */
+:root.dark {
+  --bg: #0b0f14;
+  --card: #0f141a;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #1f2937;
+  --primary: #60a5fa;
+  --primary-contrast: #0b0f14;
+  --focus: #1d4ed8;
+  --shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+}
+
+/* دعم تلقائي حسب النظام عند اختيار "auto" (يتم عبر JS) */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --bg: #0b0f14;
+    --card: #0f141a;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #1f2937;
+    --primary: #60a5fa;
+    --primary-contrast: #0b0f14;
+    --focus: #1d4ed8;
+    --shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+
+/* قاعدة عامة */
+* { box-sizing: border-box; }
+html { -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Naskh Arabic UI", "Tahoma", Arial, sans-serif;
+  font-size: clamp(14px, 1.9vw, 16px);
+  line-height: 1.6;
+}
+
+/* الحاوية */
+.container {
+  width: 100%;
+  max-width: var(--container-w);
+  margin-inline: auto;
+  padding: clamp(12px, 3vw, 24px);
+}
+
+/* شريط علوي بسيط مع زر الوضع */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px clamp(12px, 3vw, 24px);
+}
+
+/* بطاقات وأقسام */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: clamp(12px, 3vw, 20px);
+}
+
+/* شبكة مرنة */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(10px, 2.5vw, 16px);
+}
+.col-12 { grid-column: span 12; }
+.col-6  { grid-column: span 6; }
+.col-4  { grid-column: span 4; }
+
+@media (max-width: 900px){
+  .col-6 { grid-column: span 12; }
+  .col-4 { grid-column: span 6; }
+}
+@media (max-width: 600px){
+  .col-4 { grid-column: span 12; }
+}
+
+/* حقول النماذج */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="tel"],
+input[type="email"],
+textarea,
+select {
+  width: 100%;
+  min-height: 44px; /* هدف لمس مريح */
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+}
+textarea { min-height: 100px; resize: vertical; }
+input:focus, textarea:focus, select:focus {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--focus) 30%, transparent);
+}
+
+/* أزرار */
+.button, button, input[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+  cursor: pointer;
+}
+.button.secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.button:active { transform: translateY(1px); }
+
+/* جداول (تغليف للتمرير أفقيًا بالموبايل) */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 720px;
+}
+th, td {
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+th { color: var(--muted); font-weight: 700; }
+
+/* شريط إجراءات سفلي على الهاتف (اختياري) */
+.actions-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 10px clamp(12px, 3vw, 24px);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* زر تبديل الوضع */
+#themeToggle {
+  margin-inline-start: auto;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+/* تحسينات صغيرة */
+:where(label) { display: inline-block; margin-bottom: 6px; color: var(--muted); }
+hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.small { color: var(--muted); font-size: .9em; }
